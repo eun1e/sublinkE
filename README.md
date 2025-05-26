@@ -24,8 +24,9 @@
 
 - [x] 修复部分 BUG
 - [x] 支持 Clash `dialer-proxy` 属性
-- [ ] 允许添加并使用 Secret 访问 API
-- [ ] 导入订阅链接中的节点
+- [ ] 允许添加并使用 Access Token 访问 API
+- [ ] 导入、定时更新订阅链接中的节点
+- [ ] ...
 
 # 项目特色
 
@@ -36,6 +37,15 @@
     - clash（支持 ss, ssr, trojan, vmess, vless, hy, hy2, tuic）
     - surge（支持 ss, trojan, vmess, hy2, tuic）
 - 新增 token 授权及订阅导入功能，增强安全性和便捷性。
+
+# 安装说明
+```bash
+docker run --name sublinke -p 8000:8000 \
+-v $PWD/db:/app/db \
+-v $PWD/template:/app/template \
+-v $PWD/logs:/app/logs \
+-d eun1e/sublinke 
+```
 
 # 项目预览
 
