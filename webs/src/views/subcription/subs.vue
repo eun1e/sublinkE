@@ -53,25 +53,25 @@ const qrcode = ref('')
 const templist = ref<Temp[]>([])
 async function getsubs() {
   const {data} = await getSubs();
-    tableData.value = data
+  tableData.value = data
 }
 async function gettemps() {
-    const {data} = await getTemp();
-    templist.value = data
-    console.log(templist.value);
+  const {data} = await getTemp();
+  templist.value = data
+  console.log(templist.value);
 }
 onMounted(() => {
-    getsubs()
-    gettemps()
+  getsubs()
+  gettemps()
 })
 onMounted(async() => {
-    const {data} = await getNodes();
-    NodesList.value = data
+  const {data} = await getNodes();
+  NodesList.value = data
 })
 
 
 const addSubs = async ()=>{
-    const config = JSON.stringify({
+  const config = JSON.stringify({
     "clash": Clash.value.trim(),
     "surge": Surge.value.trim(),
     "udp": checkList.value.includes('udp') ? true :  false,
@@ -97,29 +97,38 @@ const addSubs = async ()=>{
     ElMessage.success("更新成功");
   }
 
-    dialogVisible.value = false;
+  dialogVisible.value = false;
 }
 
 const multipleSelection = ref<Sub[]>([])
 const handleSelectionChange = (val: Sub[]) => {
   multipleSelection.value = val
-  
+
 }
 const selectAll = () => {
   tableData.value.forEach(row => {
-            table.value.toggleRowSelection(row, true)
-        })
+    table.value.toggleRowSelection(row, true)
+  })
 }
 const handleIplogs = (row: any) => {
   iplogsdialog.value = true
   nextTick(() => {
     tableData.value.forEach((item) => {
-    if (item.ID === row.ID) {
-      IplogsList.value = item.SubLogs
-    }
+      if (item.ID === row.ID) {
+        IplogsList.value = item.SubLogs
+      }
+    })
+
   })
-  
-  })
+}
+
+// 为树形表格提供唯一的行键，避免子节点与父节点ID冲突，错误的行键会子节点也显示可以展开
+const getRowKey = function(row: any): string {
+  if (row.Nodes) {
+    return  row.ID;
+  } else {
+    return 'node_' + row.ID;
+  }
 }
 
 const toggleSelection = () => {
@@ -173,21 +182,21 @@ const handleDel = (row:any) => {
       type: 'warning',
     }
   ).then(async () => {
-      await DelSub({
-        id: row.ID
-      })
-      getsubs()
-      ElMessage({
-        type: 'success',
-        message: '删除成功',
-      })
-      
+    await DelSub({
+      id: row.ID
     })
+    getsubs()
+    ElMessage({
+      type: 'success',
+      message: '删除成功',
+    })
+
+  })
 }
 
 const selectDel = () => {
   if (multipleSelection.value.length === 0) {
-      return
+    return
   }
   ElMessageBox.confirm(
     `你是否要删除选中这些 ?`,
@@ -199,18 +208,21 @@ const selectDel = () => {
     }
   ).then( () => {
     for (let i = 0; i < multipleSelection.value.length; i++) {
-       DelSub({
+      if (!multipleSelection.value[i].Nodes){
+        continue
+      }
+      DelSub({
         id: multipleSelection.value[i].ID
       })
-        tableData.value = tableData.value.filter((item) => item.ID !== multipleSelection.value[i].ID)
-      }
-      ElMessage({
-        type: 'success',
-        message: '删除成功',
-      })
-      
-      
+      tableData.value = tableData.value.filter((item) => item.ID !== multipleSelection.value[i].ID)
+    }
+    ElMessage({
+      type: 'success',
+      message: '删除成功',
     })
+
+
+  })
 
 }
 // 分页显示
@@ -278,7 +290,7 @@ const Qrdialog = ref(false)
 const QrTitle = ref('')
 const handleQrcode = (url:string,title:string)=>{
   Qrdialog.value = true
-  qrcode.value = url 
+  qrcode.value = url
   QrTitle.value = title
 }
 const OpenUrl = (url:string) => {
@@ -292,7 +304,7 @@ const clientradio = ref('1')
     <el-dialog v-model="Qrdialog" width="300px" style="text-align: center" :title="QrTitle">
       <qrcode-vue :value="qrcode"  :size="200" level="H" />
       <el-input
-      v-model="qrcode"
+        v-model="qrcode"
       >
       </el-input>
       <el-button @click="copyUrl(qrcode)">复制</el-button>
@@ -302,142 +314,142 @@ const clientradio = ref('1')
     <el-dialog v-model="ClientDiaLog" title="客户端(点击二维码获取地址)" style="text-align: center" >
       <el-row>
         <el-col>
-        <el-tag type="success" size="large">自动识别</el-tag>
-        <el-button @click="handleQrcode(ClientUrl,'自动识别客户端')">二维码</el-button>
-      </el-col>
+          <el-tag type="success" size="large">自动识别</el-tag>
+          <el-button @click="handleQrcode(ClientUrl,'自动识别客户端')">二维码</el-button>
+        </el-col>
         <el-col v-for="(item,index) in ClientUrls" style="margin-bottom:10px;">
           <el-tag type="success" size="large">{{index}}</el-tag>
           <el-button @click="handleQrcode(`${item}&client=${index}`,index)">二维码</el-button>
         </el-col>
-        </el-row>
+      </el-row>
     </el-dialog>
-    
+
     <el-dialog v-model="iplogsdialog" title="访问记录" width="80%" draggable>
-  <template #footer>
-    <div class="dialog-footer">
-      <el-table :data="IplogsList" border style="width: 100%">
-        <el-table-column prop="IP" label="Ip" />
-        <el-table-column prop="Count" label="总访问次数" />
-        <el-table-column prop="Addr" label="来源" />
-        <el-table-column prop="Date" label="最近时间" />
-      </el-table>
-    </div>
-  </template>
-</el-dialog>
-    <el-dialog
-    v-model="dialogVisible"
-    :title="SubTitle"
-  >
-  <el-input v-model="Subname" placeholder="请输入订阅名称" />
-  
-  <el-row >
-  <el-tag type="primary">clash模版选择</el-tag>
-  <el-radio-group v-model="clientradio" class="ml-4">
-      <el-radio value="1">本地</el-radio>
-      <el-radio value="2">url链接</el-radio>
-    </el-radio-group>
-  <el-select v-model="Clash" placeholder="clash模版文件"  v-if="clientradio === '1'">
-    <el-option v-for="template in templist" :key="template.file" :label="template.file" :value="'./template/'+template.file" />
-  </el-select>
-  <el-input v-model="Clash" placeholder="clash模版文件"  v-else />
-</el-row>
-<el-row >
-  <el-tag type="primary">surge模版选择</el-tag>
-  <el-radio-group v-model="clientradio" class="ml-4">
-      <el-radio value="1">本地</el-radio>
-      <el-radio value="2">url链接</el-radio>
-    </el-radio-group>
-  <el-select v-model="Surge" placeholder="surge模版文件"  v-if="clientradio === '1'">
-    <el-option v-for="template in templist" :key="template.file" :label="template.file" :value="'./template/'+template.file" />
-  </el-select>
-  <el-input v-model="Surge" placeholder="surge模版文件"  v-else />
-</el-row>
-
-  <el-row>
-    <el-tag type="primary">强制开启选项</el-tag>
-  <el-checkbox-group v-model="checkList"  style="margin: 5px;">
-    <el-checkbox :value="'udp'">udp</el-checkbox>
-    <el-checkbox :value="'cert'">跳过证书</el-checkbox>
-  </el-checkbox-group>
-</el-row>
-  <div class="m-4">
-    <p>选择已有的节点列表</p>
-    <el-select
-      v-model="value1"
-      multiple
-      placeholder="Select"
-      style="width: 100%"
-    >
-      <el-option
-        v-for="item in NodesList"
-        :key="item.Name"
-        :label="item.Name"
-        :value="item.Name"
-      />
-    </el-select>
-  </div>
-    <template #footer>
-      <div class="dialog-footer">
-        <el-button @click="dialogVisible = false">关闭</el-button>
-        <el-button type="primary" @click="addSubs">确定</el-button>
-      </div>
-    </template>
-  </el-dialog>
-    <el-card>
-    <el-button type="primary" @click="handleAddSub">添加订阅</el-button>
-    <div style="margin-bottom: 10px"></div>
-
-      <el-table ref="table" 
-      :data="currentTableData" 
-      style="width: 100%" 
-      stripe
-      @selection-change="handleSelectionChange" 
-      row-key="ID" 
-      :tree-props="{children: 'Nodes'}"
-      >
-    <el-table-column type="selection" fixed prop="ID" label="id"  />
-    <el-table-column prop="Name" label="订阅名称 / 节点"  >
-    <template #default="{row}">
-      <el-tag :type="!row.Nodes ? 'success' : 'primary'" >{{row.Name}}</el-tag>
-        </template>
-    </el-table-column>
-    <el-table-column prop="Link" label="链接" :show-overflow-tooltip="true" >
-      <template #default="{row}">
-        <div v-if="row.Nodes">
-          <el-link type="primary" size="small" @click="handleClient(row.Name)">客户端</el-link>
+      <template #footer>
+        <div class="dialog-footer">
+          <el-table :data="IplogsList" border style="width: 100%">
+            <el-table-column prop="IP" label="Ip" />
+            <el-table-column prop="Count" label="总访问次数" />
+            <el-table-column prop="Addr" label="来源" />
+            <el-table-column prop="Date" label="最近时间" />
+          </el-table>
         </div>
-        </template>
-      </el-table-column>
- 
-    <el-table-column prop="CreateDate" label="创建时间" sortable  />
-    <el-table-column  label="操作" width="120">
-      <template #default="scope">
-        <div v-if="scope.row.Nodes">
-          <el-button link type="primary" size="small" @click="handleIplogs(scope.row)">记录</el-button>
-          <el-button link type="primary" size="small" @click="handleEdit(scope.row)">编辑</el-button>
-  <el-button link type="primary" size="small" @click="handleDel(scope.row)">删除</el-button>
-        </div>
-        <div v-else>
-          <el-button link type="primary" size="small" @click="copyInfo(scope.row)">复制</el-button>
-        </div>
-
       </template>
-    </el-table-column>
-  </el-table>
-  <div style="margin-top: 20px" />
-    <el-button type="info" @click="selectAll()">全选</el-button>
-    <el-button type="warning" @click="toggleSelection()">取消选择</el-button>
-    <el-button type="danger" @click="selectDel">批量删除</el-button>
-  <div style="margin-top: 20px"/>
-  <el-pagination
-  @size-change="handleSizeChange"
-  @current-change="handleCurrentChange"
-  :current-page="currentPage"
-  :page-size="pageSize"
-  layout="total, sizes, prev, pager, next, jumper"
-  :page-sizes="[10, 20, 30, 40]"
-  :total="tableData.length">
-</el-pagination>
+    </el-dialog>
+    <el-dialog
+      v-model="dialogVisible"
+      :title="SubTitle"
+    >
+      <el-input v-model="Subname" placeholder="请输入订阅名称" />
+
+      <el-row >
+        <el-tag type="primary">clash模版选择</el-tag>
+        <el-radio-group v-model="clientradio" class="ml-4">
+          <el-radio value="1">本地</el-radio>
+          <el-radio value="2">url链接</el-radio>
+        </el-radio-group>
+        <el-select v-model="Clash" placeholder="clash模版文件"  v-if="clientradio === '1'">
+          <el-option v-for="template in templist" :key="template.file" :label="template.file" :value="'./template/'+template.file" />
+        </el-select>
+        <el-input v-model="Clash" placeholder="clash模版文件"  v-else />
+      </el-row>
+      <el-row >
+        <el-tag type="primary">surge模版选择</el-tag>
+        <el-radio-group v-model="clientradio" class="ml-4">
+          <el-radio value="1">本地</el-radio>
+          <el-radio value="2">url链接</el-radio>
+        </el-radio-group>
+        <el-select v-model="Surge" placeholder="surge模版文件"  v-if="clientradio === '1'">
+          <el-option v-for="template in templist" :key="template.file" :label="template.file" :value="'./template/'+template.file" />
+        </el-select>
+        <el-input v-model="Surge" placeholder="surge模版文件"  v-else />
+      </el-row>
+
+      <el-row>
+        <el-tag type="primary">强制开启选项</el-tag>
+        <el-checkbox-group v-model="checkList"  style="margin: 5px;">
+          <el-checkbox :value="'udp'">udp</el-checkbox>
+          <el-checkbox :value="'cert'">跳过证书</el-checkbox>
+        </el-checkbox-group>
+      </el-row>
+      <div class="m-4">
+        <p>选择已有的节点列表</p>
+        <el-select
+          v-model="value1"
+          multiple
+          placeholder="Select"
+          style="width: 100%"
+        >
+          <el-option
+            v-for="item in NodesList"
+            :key="item.Name"
+            :label="item.Name"
+            :value="item.Name"
+          />
+        </el-select>
+      </div>
+      <template #footer>
+        <div class="dialog-footer">
+          <el-button @click="dialogVisible = false">关闭</el-button>
+          <el-button type="primary" @click="addSubs">确定</el-button>
+        </div>
+      </template>
+    </el-dialog>
+    <el-card>
+      <el-button type="primary" @click="handleAddSub">添加订阅</el-button>
+      <div style="margin-bottom: 10px"></div>
+
+      <el-table ref="table"
+                :data="currentTableData"
+                style="width: 100%"
+                stripe
+                @selection-change="handleSelectionChange"
+                :row-key="getRowKey"
+                :tree-props="{children: 'Nodes'}"
+      >
+        <el-table-column type="selection" fixed prop="ID" label="id"  />
+        <el-table-column prop="Name" label="订阅名称 / 节点"  >
+          <template #default="{row}">
+            <el-tag :type="!row.Nodes ? 'success' : 'primary'" >{{row.Name}}</el-tag>
+          </template>
+        </el-table-column>
+        <el-table-column prop="Link" label="链接" :show-overflow-tooltip="true" >
+          <template #default="{row}">
+            <div v-if="row.Nodes">
+              <el-link type="primary" size="small" @click="handleClient(row.Name)">客户端</el-link>
+            </div>
+          </template>
+        </el-table-column>
+
+        <el-table-column prop="CreateDate" label="创建时间" sortable  />
+        <el-table-column  label="操作" width="120">
+          <template #default="scope">
+            <div v-if="scope.row.Nodes">
+              <el-button link type="primary" size="small" @click="handleIplogs(scope.row)">记录</el-button>
+              <el-button link type="primary" size="small" @click="handleEdit(scope.row)">编辑</el-button>
+              <el-button link type="primary" size="small" @click="handleDel(scope.row)">删除</el-button>
+            </div>
+            <div v-else>
+              <el-button link type="primary" size="small" @click="copyInfo(scope.row)">复制</el-button>
+            </div>
+
+          </template>
+        </el-table-column>
+      </el-table>
+      <div style="margin-top: 20px" />
+      <el-button type="info" @click="selectAll()">全选</el-button>
+      <el-button type="warning" @click="toggleSelection()">取消选择</el-button>
+      <el-button type="danger" @click="selectDel">批量删除</el-button>
+      <div style="margin-top: 20px"/>
+      <el-pagination
+        @size-change="handleSizeChange"
+        @current-change="handleCurrentChange"
+        :current-page="currentPage"
+        :page-size="pageSize"
+        layout="total, sizes, prev, pager, next, jumper"
+        :page-sizes="[10, 20, 30, 40]"
+        :total="tableData.length">
+      </el-pagination>
 
     </el-card>
   </div>

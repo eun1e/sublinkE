@@ -3,7 +3,7 @@ FROM golang:1.22.2-alpine AS builder
 WORKDIR /app
 COPY . .
 RUN go mod download
-RUN go build -o sublinkX
+RUN go build -o sublinkE
 
 # Final stage
 FROM alpine:latest
@@ -15,7 +15,7 @@ ENV TZ=Asia/Shanghai
 # 部分环境需要手动创建目录
 RUN mkdir -p /app/db /app/logs /app/template && chmod 777 /app/db /app/logs /app/template
 
-COPY --from=builder /app/sublinkX /app/sublinkX
+COPY --from=builder /app/sublinkE /app/sublinkE
 EXPOSE 8000
-CMD ["/app/sublinkX"]
+CMD ["/app/sublinkE"]
 

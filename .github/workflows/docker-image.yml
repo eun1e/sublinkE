@@ -36,5 +36,5 @@ jobs:
       - name: Build and Push Multi-Arch Docker Image
         run: |
           docker buildx build --platform linux/amd64,linux/arm64 \
-            -t jaaksi/sublinkx:latest \
+            -t eun1e/sublinkE:latest \
             --push .
