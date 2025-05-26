@@ -5,6 +5,7 @@ import (
 	"net/url"
 	"strconv"
 	"strings"
+	"sublink/utils"
 )
 
 type Trojan struct {
@@ -121,7 +122,7 @@ func DecodeTrojanURL(s string) (Trojan, error) {
 	if name == "" {
 		name = hostname + ":" + u.Port()
 	}
-	if CheckEnvironment() {
+	if utils.CheckEnvironment() {
 		fmt.Println("password:", password)
 		fmt.Println("password:", u.User.Username())
 		fmt.Println("hostname:", hostname)

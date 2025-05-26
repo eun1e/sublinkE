@@ -17,12 +17,6 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-//go:embed static/js/*
-//go:embed static/css/*
-//go:embed static/img/*
-//go:embed static/*
-var embeddedFiles embed.FS
-
 //go:embed template
 var Template embed.FS
 
@@ -121,21 +115,23 @@ func Run(port int) {
 	// 安装中间件
 	r.Use(middlewares.AuthorToken) // jwt验证token
 	// 设置静态资源路径
-	staticFiles, err := fs.Sub(embeddedFiles, "static")
-	if err != nil {
-		log.Println(err)
-	}
-	r.StaticFS("/static", http.FS(staticFiles))
-	// 设置模板路径
-	r.GET("/", func(c *gin.Context) {
-		data, err := fs.ReadFile(staticFiles, "index.html")
+	// 生产环境才启用内嵌静态文件服务
+	if StaticFiles != nil {
+		staticFiles, err := fs.Sub(StaticFiles, "static")
 		if err != nil {
-			c.Error(err)
-			return
-
+			log.Println(err)
+		} else {
+			r.StaticFS("/static", http.FS(staticFiles))
+			r.GET("/", func(c *gin.Context) {
+				data, err := fs.ReadFile(staticFiles, "index.html")
+				if err != nil {
+					c.Error(err)
+					return
+				}
+				c.Data(200, "text/html", data)
+			})
 		}
-		c.Data(200, "text/html", data)
-	})
+	}
 	// 注册路由
 	routers.User(r)
 	routers.Mentus(r)

@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"strconv"
 	"strings"
+	"sublink/utils"
 )
 
 func CallSSRURL() {
@@ -84,7 +85,7 @@ func DecodeSSRURL(s string) (Ssr, error) {
 		remarks = Base64Decode(paramMap["remarks"])
 		obfsparam = Base64Decode(paramMap["obfsparam"])
 		defer func() {
-			if CheckEnvironment() {
+			if utils.CheckEnvironment() {
 				fmt.Println("remarks", remarks)
 				fmt.Println("obfsparam", obfsparam)
 			}
@@ -105,7 +106,7 @@ func DecodeSSRURL(s string) (Ssr, error) {
 	if remarks == "" {
 		remarks = server + ":" + strconv.Itoa(port)
 	}
-	if CheckEnvironment() {
+	if utils.CheckEnvironment() {
 		fmt.Println("password", password)
 		fmt.Println("obfs", obfs)
 		fmt.Println("method", method)

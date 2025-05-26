@@ -5,6 +5,7 @@ import (
 	"net/url"
 	"strconv"
 	"strings"
+	"sublink/utils"
 )
 
 type VLESS struct {
@@ -135,7 +136,7 @@ func DecodeVLESSURL(s string) (VLESS, error) {
 	if name == "" {
 		name = hostname + ":" + u.Port()
 	}
-	if CheckEnvironment() {
+	if utils.CheckEnvironment() {
 		fmt.Println("uuid:", uuid)
 		fmt.Println("hostname:", hostname)
 		fmt.Println("port:", port)
@@ -178,4 +179,3 @@ func DecodeVLESSURL(s string) (VLESS, error) {
 		},
 	}, nil
 }
-

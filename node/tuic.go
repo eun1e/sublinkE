@@ -5,6 +5,7 @@ import (
 	"net/url"
 	"strconv"
 	"strings"
+	"sublink/utils"
 )
 
 type Tuic struct {
@@ -50,7 +51,7 @@ func DecodeTuicURL(s string) (Tuic, error) {
 	if name == "" {
 		name = server + ":" + u.Port()
 	}
-	if CheckEnvironment() {
+	if utils.CheckEnvironment() {
 		fmt.Println("password:", password)
 		fmt.Println("server:", server)
 		fmt.Println("port:", port)
