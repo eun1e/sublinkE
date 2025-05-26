@@ -20,7 +20,7 @@ COPY . .
 # 把前端构建产物复制到 static 目录
 COPY --from=frontend-builder /frontend/webs/dist ./static
 
-RUN go build -o sublinkE
+RUN go build -tags=prod -o sublinkE
 
 # 3. 运行镜像
 FROM alpine:latest

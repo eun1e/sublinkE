@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"log"
 	"strings"
+	"sublink/utils"
 )
 
 type Vmess struct {
@@ -78,7 +79,7 @@ func DecodeVMESSURL(s string) (Vmess, error) {
 	if vmess.Ps == "" {
 		vmess.Ps = vmess.Add + ":" + vmess.Port.(string)
 	}
-	if CheckEnvironment() {
+	if utils.CheckEnvironment() {
 		fmt.Println("服务器地址", vmess.Add)
 		fmt.Println("端口", vmess.Port)
 		fmt.Println("path", vmess.Path)

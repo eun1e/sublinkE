@@ -6,6 +6,7 @@ import (
 	"net/url"
 	"strconv"
 	"strings"
+	"sublink/utils"
 )
 
 // ss匹配规则
@@ -103,7 +104,7 @@ func DecodeSSURL(s string) (Ss, error) {
 		name = addr
 	}
 	// 开发环境输出结果
-	if CheckEnvironment() {
+	if utils.CheckEnvironment() {
 		fmt.Println("Param:", Base64Decode(param))
 		fmt.Println("Server", server)
 		fmt.Println("Port", port)

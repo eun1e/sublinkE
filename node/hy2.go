@@ -5,6 +5,7 @@ import (
 	"net/url"
 	"strconv"
 	"strings"
+	"sublink/utils"
 )
 
 type HY2 struct {
@@ -98,7 +99,7 @@ func DecodeHY2URL(s string) (HY2, error) {
 	if name == "" {
 		name = server + ":" + u.Port()
 	}
-	if CheckEnvironment() {
+	if utils.CheckEnvironment() {
 		fmt.Println("password:", password)
 		fmt.Println("server:", server)
 		fmt.Println("port:", port)

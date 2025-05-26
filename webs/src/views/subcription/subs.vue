@@ -317,7 +317,7 @@ const clientradio = ref('1')
           <el-tag type="success" size="large">自动识别</el-tag>
           <el-button @click="handleQrcode(ClientUrl,'自动识别客户端')">二维码</el-button>
         </el-col>
-        <el-col v-for="(item,index) in ClientUrls" style="margin-bottom:10px;">
+        <el-col v-for="(item,index) in ClientUrls" :key="index" style="margin-bottom:10px;">
           <el-tag type="success" size="large">{{index}}</el-tag>
           <el-button @click="handleQrcode(`${item}&client=${index}`,index)">二维码</el-button>
         </el-col>
