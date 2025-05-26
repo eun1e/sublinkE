@@ -29,6 +29,6 @@ jobs:
         run: |
           TAG=${GITHUB_REF#refs/tags/}
           docker buildx build --platform linux/amd64,linux/arm64 \
-            -t eun1e/sublinkE:${TAG} \
-            -t eun1e/sublinkE:latest \
+            -t eun1e/sublinke:${TAG} \
+            -t eun1e/sublinke:latest \
             --push .
