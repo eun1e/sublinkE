@@ -31,7 +31,6 @@
 # 项目特色
 
 - 高自由度与安全性，支持访问订阅记录及简易配置管理；
-- 提供无需 Docker 容器的二进制编译版本，方便部署；
 - 支持多种客户端协议及格式，包括：
     - v2ray（base64 通用格式）
     - clash（支持 ss, ssr, trojan, vmess, vless, hy, hy2, tuic）
