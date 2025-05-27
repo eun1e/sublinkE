@@ -10,7 +10,7 @@ func APIKey(r *gin.Engine) {
 	userGroup := r.Group("/api/v1/apikey")
 	{
 		userGroup.POST("/add", api.GenerateAPIKey)
-		userGroup.DELETE("/delete", api.DeleteAPIKey)
-		userGroup.GET("/get", api.GetAPIKey)
+		userGroup.DELETE("/delete/:apiKeyId", api.DeleteAPIKey)
+		userGroup.GET("/get/:userId", api.GetAPIKey)
 	}
 }

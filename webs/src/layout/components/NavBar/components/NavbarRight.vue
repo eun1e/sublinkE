@@ -32,9 +32,12 @@
       </div>
       <template #dropdown>
         <el-dropdown-menu>
-            <router-link to="/system/user/set">
+          <router-link to="/apikey/index">
+            <el-dropdown-item>{{ $t('apikey.manage') }}</el-dropdown-item>
+          </router-link>
+          <router-link to="/system/user/set">
             <el-dropdown-item>{{ $t("navbar.userset") }}</el-dropdown-item>
-            </router-link>
+          </router-link>
           <el-dropdown-item divided @click="logout">
             {{ $t("navbar.logout") }}
           </el-dropdown-item>

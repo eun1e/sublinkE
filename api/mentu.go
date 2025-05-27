@@ -29,26 +29,51 @@ type Menu struct {
 }
 
 func GetMenus(c *gin.Context) {
-	menus := []Menu{
+	menus := []Menu{{
+		Path:      "/system",
+		Component: "Layout",
+		// Redirect:  "/system/user",
+		Name: "system",
+		Meta: Meta{
+			Title:  "system",
+			Icon:   "system",
+			Hidden: true,
+			Roles:  []string{"ADMIN"},
+		},
+		Children: []Child{
+			{
+				Path:      "user/set",
+				Component: "system/user/set",
+				Name:      "Userset",
+				Meta: Meta{
+					Title:     "userset",
+					Icon:      "role",
+					Hidden:    true,
+					Roles:     []string{"ADMIN"},
+					KeepAlive: true,
+				},
+			},
+		},
+	},
+		// API密钥管理
 		{
-			Path:      "/system",
+			Path:      "/apikey",
 			Component: "Layout",
-			// Redirect:  "/system/user",
-			Name: "system",
+			Name:      "apikey",
 			Meta: Meta{
-				Title:  "system",
-				Icon:   "system",
+				Title:  "apikey",
+				Icon:   "key",
 				Hidden: true,
 				Roles:  []string{"ADMIN"},
 			},
 			Children: []Child{
 				{
-					Path:      "user/set",
-					Component: "system/user/set",
-					Name:      "Userset",
+					Path:      "index",
+					Component: "apikey/index",
+					Name:      "ApikeyIndex",
 					Meta: Meta{
-						Title:     "userset",
-						Icon:      "role",
+						Title:     "apikey",
+						Icon:      "key",
 						Hidden:    true,
 						Roles:     []string{"ADMIN"},
 						KeepAlive: true,

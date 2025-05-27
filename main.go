@@ -118,6 +118,8 @@ func Run(port int) {
 	utils.Loginit()
 	// 初始化模板
 	Templateinit()
+	// 启动 AccessKey 清理定时任务
+	models.StartAccessKeyCleanupScheduler()
 	// 安装中间件
 	r.Use(middlewares.AuthToken) // jwt验证token
 	// 设置静态资源路径
