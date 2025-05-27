@@ -317,23 +317,39 @@ const getExpirationTagType = (row: LocalAPIKey) => {
   return 'info'; // 正常
 };
 
+// 通用复制文本到剪贴板函数
+const copyTextToClipboard = (text: string) => {
+  const textarea = document.createElement('textarea');
+  textarea.value = text;
+  textarea.style.position = 'fixed';
+  textarea.style.opacity = '0';
+  document.body.appendChild(textarea);
+  textarea.focus();
+  textarea.select();
+
+  const successful = document.execCommand('copy');
+  document.body.removeChild(textarea);
+
+  return successful;
+};
+
 // 复制API密钥
 const copyApiKey = () => {
-  navigator.clipboard.writeText(createdApiKey.value)
-    .then(() => {
-      ElMessage({
-        message: t('apikey.copySuccess'),
-        type: 'success',
-        duration: 1500
-      });
-    })
-    .catch(() => {
-      ElMessage({
-        message: t('apikey.copyFailed'),
-        type: 'error',
-        duration: 3000
-      });
+  const successful = copyTextToClipboard(createdApiKey.value);
+  
+  if (successful) {
+    ElMessage({
+      message: t('apikey.copySuccess'),
+      type: 'success',
+      duration: 1500
     });
+  } else {
+    ElMessage({
+      message: t('apikey.copyFailed'),
+      type: 'error',
+      duration: 3000
+    });
+  }
 };
 
 // 格式化日期时间
