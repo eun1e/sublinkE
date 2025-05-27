@@ -13,13 +13,13 @@ import (
 )
 
 type AccessKey struct {
-	ID            int    `gorm:"primaryKey"`
-	UserID        int    `gorm:"not null;index"` // 关联到用户的外键
-	Username      string `gorm:"not null;index"`
-	AccessKeyHash string `gorm:"type:varchar(255);not null;uniqueIndex"` // API Key 哈希值
-	CreatedAt     time.Time
-	ExpiredAt     *time.Time `gorm:"index"`             // 过期时间（可选）
-	Description   string     `gorm:"type:varchar(255)"` // 备注
+	ID            int        `gorm:"primaryKey" json:"id"`
+	UserID        int        `gorm:"not null;index" json:"userID"` // 关联到用户的外键
+	Username      string     `gorm:"not null;index" json:"username"`
+	AccessKeyHash string     `gorm:"type:varchar(255);not null;uniqueIndex" json:"-"` // API Key 哈希值，不返回给前端
+	CreatedAt     time.Time  `gorm:"" json:"createdAt"`
+	ExpiredAt     *time.Time `gorm:"index" json:"expiredAt"`               // 过期时间（可选）
+	Description   string     `gorm:"type:varchar(255)" json:"description"` // 备注
 }
 
 // Generate 保存 AccessKey
@@ -49,21 +49,6 @@ func (accessKey *AccessKey) Delete() error {
 	err = DB.Unscoped().Delete(accessKey).Error
 	if err != nil {
 		return err
-	}
-
-	// 删除成功后清理缓存
-	if fullAccessKey.Username != "" {
-		log.Printf("准备清理用户缓存，Username: %s", fullAccessKey.Username)
-		go func(username string) {
-			defer func() {
-				if r := recover(); r != nil {
-					log.Printf("缓存清理协程异常: %v", r)
-				}
-			}()
-			utils.ClearUserFromCache(username)
-		}(fullAccessKey.Username)
-	} else {
-		log.Printf("用户名为空，跳过缓存清理")
 	}
 
 	return nil

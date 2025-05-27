@@ -8,8 +8,6 @@ import (
 	"math/big"
 	"os"
 	"strings"
-	"sync"
-	"time"
 )
 
 // 检查环境
@@ -120,80 +118,4 @@ func DecryptUserIDCompact(encrypted string, key []byte) (int, error) {
 	// 转换回用户ID，使用uint32确保不会出现负数
 	userID := int(binary.BigEndian.Uint32(decrypted))
 	return userID, nil
-}
-
-// API Key缓存结构
-type ApiKeyCache struct {
-	Username  string
-	Timestamp time.Time
-}
-
-// 全局缓存
-var (
-	apiKeyMap   = make(map[string]ApiKeyCache)
-	cacheMutex  = sync.RWMutex{}
-	cacheExpiry = 5 * time.Minute // 缓存5分钟
-)
-
-// ClearExpiredCache 清理过期缓存
-func ClearExpiredCache() {
-	cacheMutex.Lock()
-	defer cacheMutex.Unlock()
-
-	now := time.Now()
-	for key, cache := range apiKeyMap {
-		if now.Sub(cache.Timestamp) > cacheExpiry {
-			delete(apiKeyMap, key)
-		}
-	}
-}
-
-// GetFromCache 从缓存获取用户名
-func GetFromCache(apiKey string) (string, bool) {
-	cacheMutex.RLock()
-	defer cacheMutex.RUnlock()
-
-	if cache, exists := apiKeyMap[apiKey]; exists {
-		if time.Since(cache.Timestamp) <= cacheExpiry {
-			return cache.Username, true
-		}
-	}
-	return "", false
-}
-
-// SetCache 设置缓存
-func SetCache(apiKey, username string) {
-	cacheMutex.Lock()
-	defer cacheMutex.Unlock()
-
-	apiKeyMap[apiKey] = ApiKeyCache{
-		Username:  username,
-		Timestamp: time.Now(),
-	}
-
-	// 每50次写入清理一次过期缓存
-	if len(apiKeyMap)%50 == 0 {
-		go ClearExpiredCache()
-	}
-}
-
-func ClearUserFromCache(username string) {
-	cacheMutex.Lock()
-	defer cacheMutex.Unlock()
-
-	keysToDelete := make([]string, 0)
-
-	// 遍历缓存，找到属于该用户的所有API Key
-	for apiKey, cache := range apiKeyMap {
-		if cache.Username == username {
-			keysToDelete = append(keysToDelete, apiKey)
-		}
-	}
-
-	// 删除找到的API Key
-	for _, apiKey := range keysToDelete {
-		delete(apiKeyMap, apiKey)
-	}
-
-	log.Printf("已从缓存中清理用户 %s 的 %d 个 API Key", username, len(keysToDelete))
 }

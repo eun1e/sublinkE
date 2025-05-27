@@ -3,16 +3,13 @@ package middlewares
 import (
 	"errors"
 	"fmt"
-	"log"
+	"github.com/dgrijalva/jwt-go"
+	"github.com/gin-gonic/gin"
 	"net/http"
 	"os"
 	"strings"
 	"sublink/models"
 	"sublink/utils"
-	"time"
-
-	"github.com/dgrijalva/jwt-go"
-	"github.com/gin-gonic/gin"
 )
 
 var Secret = []byte("sublink") // 秘钥
@@ -44,15 +41,11 @@ func AuthToken(c *gin.Context) {
 	accessKey := c.GetHeader("X-API-Key")
 
 	if accessKey != "" {
-		username, found := utils.GetFromCache(accessKey)
-		if !found {
-			username, bool, err := validApiKey(accessKey)
-			if err != nil || !bool {
-				c.JSON(400, gin.H{"msg": "无效的API Key"})
-				c.Abort()
-				return
-			}
-			utils.SetCache(accessKey, username)
+		username, bool, err := validApiKey(accessKey)
+		if err != nil || !bool {
+			c.JSON(400, gin.H{"msg": "无效的API Key"})
+			c.Abort()
+			return
 		}
 		c.Set("username", username)
 		c.Next()
@@ -102,14 +95,6 @@ func ParseToken(tokenString string) (*JwtClaims, error) {
 }
 
 func validApiKey(apiKey string) (string, bool, error) {
-	start := time.Now() // 开始时间记录
-
-	// 首先检查缓存
-	if username, found := utils.GetFromCache(apiKey); found {
-		elapsed := time.Since(start)
-		log.Printf("validApiKey 缓存命中用时: %s", elapsed)
-		return username, true, nil
-	}
 
 	// 快速格式验证
 	parts := strings.Split(apiKey, "_")
@@ -137,16 +122,10 @@ func validApiKey(apiKey string) (string, bool, error) {
 	// bcrypt验证
 	for _, key := range keys {
 		if key.VerifyKey(apiKey) {
-			// 验证成功，添加到缓存
-			utils.SetCache(apiKey, key.Username)
 
-			elapsed := time.Since(start)
-			log.Printf("validApiKey 成功用时: %s", elapsed)
 			return key.Username, true, nil
 		}
 	}
 
-	elapsed := time.Since(start)
-	log.Printf("validApiKey 失败用时: %s", elapsed)
 	return "", false, fmt.Errorf("无效的API Key")
 }

@@ -33,14 +33,13 @@
           <template #default="scope">
             {{ formatDateTime(scope.row.created_at) }}
           </template>
-        </el-table-column>
-        <el-table-column prop="expired_at" :label="$t('apikey.expiredAt')" width="180" sortable>
+        </el-table-column>        <el-table-column prop="expiredAt" :label="$t('apikey.expiredAt')" width="180" sortable>
           <template #default="scope">
             <el-tag 
               :type="getExpirationTagType(scope.row)" 
-              :effect="scope.row.expired_at ? 'light' : 'plain'"
+              :effect="scope.row.expiredAt ? 'light' : 'plain'"
             >
-              {{ scope.row.expired_at ? formatDateTime(scope.row.expired_at) : $t('apikey.neverExpire') }}
+              {{ scope.row.expiredAt ? formatDateTime(scope.row.expiredAt) : $t('apikey.neverExpire') }}
             </el-tag>
           </template>
         </el-table-column>
@@ -153,7 +152,7 @@ interface LocalAPIKey {
   user_id: number;
   username: string;
   created_at: string;
-  expired_at: string | null;
+  expiredAt: string | null;
   description: string;
 }
 
@@ -178,25 +177,26 @@ const expirationOption = ref('never');
 const newApiKey = ref<CreateAPIKeyParams>({
   description: '',
   expiredAt: undefined,
-  username: ''
 });
 
 // 获取API密钥列表
 const loading = ref(false);
 const fetchAPIKeys = async () => {
-  loading.value = true;
-  try {
+  loading.value = true;  try {
     const userStore = useUserStore();
-    let userId= userStore.user.userId
+    let userId = userStore.user.userId;
+    if (!userId) {
+      ElMessage.error('用户ID不存在');
+      return;
+    }
     const res = await getAPIKeys(userId);
-     if (res.data && Array.isArray(res.data)) {
-      apiKeys.value = res.data.map((item: APIKey) => ({
-          id: item.ID,
-         user_id: item.UserID,
-         username: item.Username,
-         created_at: item.CreatedAt,
-         expired_at: item.ExpiredAt,
-         description: item.Description,
+     if (res.data && Array.isArray(res.data)) {      apiKeys.value = res.data.map((item: APIKey) => ({
+          id: item.id,
+         user_id: item.userID,
+         username: item.username,
+         created_at: item.createdAt,
+         expiredAt: item.expiredAt,
+         description: item.description,
       }));
     } else {
       apiKeys.value = [];
@@ -214,8 +214,7 @@ const fetchAPIKeys = async () => {
 const openCreateDialog = () => {
   newApiKey.value = {
     description: '',
-    expiredAt: undefined,
-    userName: ''
+    expiredAt: undefined
   };
   expirationOption.value = 'never';
   createDialogVisible.value = true;
@@ -236,20 +235,14 @@ const handleCreateAPIKey = async () => {
 
     if (expirationOption.value === 'custom' && newApiKey.value.expiredAt) {
       params.expiredAt = toBeijingISO8601(newApiKey.value.expiredAt);
-    }
-
+    }    
     const userStore = useUserStore();
-    let username= userStore.user.username
-    params.username = username;
+    let username = userStore.user.username;
+    params.username = username;  
     const res = await createAPIKey(params);
     creating.value = false;
     createDialogVisible.value = false;
-    
-
-    // 显示创建的API Key
-    if(res.code=="00000"){
-        createdApiKey.value = res.accessKey
-    }
+    createdApiKey.value = res.data.accessKey;
 
 
     
@@ -303,10 +296,10 @@ const handleSearch = () => {
 };
 
 // 获取过期标签类型
-const getExpirationTagType = (row: APIKey) => {
-  if (!row.expired_at) return 'success'; // 永不过期
+const getExpirationTagType = (row: LocalAPIKey) => {
+  if (!row.expiredAt) return 'success'; // 永不过期
   
-  const expireDate = new Date(row.expired_at);
+  const expireDate = new Date(row.expiredAt);
   const now = new Date();
   
   if (expireDate < now) {
