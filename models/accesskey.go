@@ -74,7 +74,7 @@ func (accessKey *AccessKey) GenerateAPIKey() (string, error) {
 
 	randomHex := hex.EncodeToString(randomBytes)
 
-	apiKey := fmt.Sprintf("subX_%s_%s", encryptedID, randomHex)
+	apiKey := fmt.Sprintf("subE_%s_%s", encryptedID, randomHex)
 
 	hashedKey, err := bcrypt.GenerateFromPassword([]byte(apiKey), bcrypt.DefaultCost)
 	if err != nil {

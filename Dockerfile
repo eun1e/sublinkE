@@ -25,6 +25,9 @@ RUN go build -tags=prod -o sublinkE
 # 3. 运行镜像
 FROM alpine:latest
 WORKDIR /app
+RUN apk add --no-cache tzdata \
+    && cp /usr/share/zoneinfo/Asia/Shanghai /etc/localtime \
+    && echo "Asia/Shanghai" > /etc/timezone
 ENV TZ=Asia/Shanghai
 RUN mkdir -p /app/db /app/logs /app/template && chmod 777 /app/db /app/logs /app/template
 COPY --from=backend-builder /app/sublinkE /app/sublinkE
