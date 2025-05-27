@@ -18,5 +18,9 @@ func User(r *gin.Engine) {
 		userGroup.GET("/me", api.UserMe)
 		userGroup.GET("/page", api.UserPages)
 		userGroup.PATCH(":username/:password", api.UserSet)
+		userGroup.POST("/generateAPIKey", api.GenerateAPIKey)
+		userGroup.DELETE("/deleteAPIKey", api.DeleteAPIKey)
+		userGroup.GET("/getAPIKey", api.GetAPIKey)
+
 	}
 }

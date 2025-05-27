@@ -2,8 +2,13 @@ package middlewares
 
 import (
 	"errors"
+	"fmt"
+	"log"
 	"net/http"
+	"os"
 	"strings"
+	"sublink/models"
+	"sublink/utils"
 
 	"github.com/dgrijalva/jwt-go"
 	"github.com/gin-gonic/gin"
@@ -17,8 +22,8 @@ type JwtClaims struct {
 	jwt.StandardClaims
 }
 
-// AuthorToken 验证token中间件
-func AuthorToken(c *gin.Context) {
+// AuthToken 验证token中间件
+func AuthToken(c *gin.Context) {
 	// 定义白名单
 	list := []string{"/static", "/api/v1/auth/login", "/api/v1/auth/captcha", "/c/", "/api/v1/version"}
 	// 如果是首页直接跳过
@@ -33,6 +38,23 @@ func AuthorToken(c *gin.Context) {
 			return
 		}
 	}
+
+	// 检查api key
+	accessKey := c.GetHeader("X-API-Key")
+
+	if accessKey != "" {
+		username, bool, err := validApiKey(accessKey)
+		if err != nil || !bool {
+			c.JSON(400, gin.H{"msg": "无效的API Key"})
+			c.Abort()
+			return
+		} else {
+			c.Set("username", username)
+			c.Next()
+			return
+		}
+	}
+
 	token := c.Request.Header.Get("Authorization")
 	if token == "" {
 		c.JSON(400, gin.H{"msg": "请求未携带token"})
@@ -73,4 +95,37 @@ func ParseToken(tokenString string) (*JwtClaims, error) {
 		return claims, nil
 	}
 	return nil, errors.New("invalid token")
+}
+
+func validApiKey(apiKey string) (string, bool, error) {
+	encryptionKey := os.Getenv("API_ENCRYPTION_KEY")
+	if encryptionKey == "" {
+		log.Println("未设置API_ENCRYPTION_KEY环境变量")
+		return "", false, fmt.Errorf("未设置API_ENCRYPTION_KEY环境变量")
+	}
+	// 用_分割API Key
+	parts := strings.Split(apiKey, "_")
+	if len(parts) != 3 {
+		log.Println("API Key格式错误")
+		return "", false, fmt.Errorf("API Key格式错误")
+	}
+	// 还原userid
+	userID, err := utils.DecryptUserIDCompact(parts[1], []byte(encryptionKey))
+	if err != nil {
+		log.Printf("查询Access Key失败: %w", err)
+		return "", false, fmt.Errorf("查询Access Key失败: %w", err)
+	}
+	// 根据userID查询access key
+	keys, err := models.FindValidAccessKeys(userID)
+	if err != nil {
+		return "", false, fmt.Errorf("查询Access Key失败: %w", err)
+	}
+
+	for _, key := range keys {
+		if key.VerifyKey(apiKey) {
+			return key.Username, true, nil
+		}
+	}
+	return "", false, fmt.Errorf("无效的API Key")
+
 }

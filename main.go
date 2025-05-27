@@ -14,6 +14,8 @@ import (
 	"sublink/settings"
 	"sublink/utils"
 
+	"github.com/joho/godotenv"
+
 	"github.com/gin-gonic/gin"
 )
 
@@ -63,10 +65,14 @@ func Templateinit() {
 }
 
 func main() {
+	err := godotenv.Load()
+	if err != nil {
+		log.Println("未找到.env文件或无法加载，将使用环境变量")
+	}
 	var port int
 	// 获取版本号
 	var Isversion bool
-	version = "1.8"
+	version = "1.0.1"
 	flag.BoolVar(&Isversion, "version", false, "显示版本号")
 	flag.Parse()
 	if Isversion {
@@ -113,7 +119,7 @@ func Run(port int) {
 	// 初始化模板
 	Templateinit()
 	// 安装中间件
-	r.Use(middlewares.AuthorToken) // jwt验证token
+	r.Use(middlewares.AuthToken) // jwt验证token
 	// 设置静态资源路径
 	// 生产环境才启用内嵌静态文件服务
 	if StaticFiles != nil {
