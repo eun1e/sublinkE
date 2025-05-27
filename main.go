@@ -140,6 +140,7 @@ func Run(port int) {
 	}
 	// 注册路由
 	routers.User(r)
+	routers.APIKey(r)
 	routers.Mentus(r)
 	routers.Subcription(r)
 	routers.Nodes(r)
