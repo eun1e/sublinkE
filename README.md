@@ -40,7 +40,7 @@
 # 安装说明
 ```bash
 docker run --name sublinke -p 8000:8000 \
--e API_ENCRYPTION_KEY="your-encryption-key"  //如果需要使用 API 功能，请设置
+-e API_ENCRYPTION_KEY="your-encryption-key" \  //如果需要使用 API 功能，请设置
 -v $PWD/db:/app/db \
 -v $PWD/template:/app/template \
 -v $PWD/logs:/app/logs \
