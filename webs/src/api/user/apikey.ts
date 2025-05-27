@@ -12,6 +12,7 @@ export interface APIKey {
 export interface CreateAPIKeyParams {
   description: string;
   expiredAt?: string;
+  username?: string;
 }
 
 /**

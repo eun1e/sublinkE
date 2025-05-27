@@ -24,7 +24,7 @@
 
 - [x] 修复部分 BUG
 - [x] 支持 Clash `dialer-proxy` 属性
-- [ ] 允许添加并使用 Access Token 访问 API
+- [x] 允许添加并使用 API KEY 访问 API
 - [ ] 导入、定时更新订阅链接中的节点
 - [ ] ...
 
@@ -41,6 +41,7 @@
 # 安装说明
 ```bash
 docker run --name sublinke -p 8000:8000 \
+-e API_ENCRYPTION_KEY="your-encryption-key"  //如果需要使用 API 功能，请设置
 -v $PWD/db:/app/db \
 -v $PWD/template:/app/template \
 -v $PWD/logs:/app/logs \
@@ -51,4 +52,5 @@ docker run --name sublinke -p 8000:8000 \
 
 ![预览1](webs/src/assets/1.png)
 ![预览2](webs/src/assets/2.png)
+![预览3](webs/src/assets/3.png)
 

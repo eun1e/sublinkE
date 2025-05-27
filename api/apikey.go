@@ -47,9 +47,11 @@ func GenerateAPIKey(c *gin.Context) {
 		return
 	}
 	c.JSON(200, gin.H{
-		"code":      "00000",
-		"accessKey": apiKey,
-		"msg":       "API Key生成成功",
+		"code": "00000",
+		"data": map[string]string{
+			"accessKey": apiKey,
+		},
+		"msg": "API Key生成成功",
 	})
 }
 
