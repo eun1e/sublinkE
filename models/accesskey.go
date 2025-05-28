@@ -128,7 +128,6 @@ func CleanupExpiredAccessKeys() error {
 // StartAccessKeyCleanupScheduler 启动 AccessKey 清理定时任务
 func StartAccessKeyCleanupScheduler() {
 	log.Println("启动 AccessKey 清理定时任务")
-
 	// 每小时执行一次清理
 	ticker := time.NewTicker(1 * time.Hour)
 
