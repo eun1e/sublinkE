@@ -1,6 +1,8 @@
 <script setup lang='ts'>
-import { ref,onMounted,nextTick  } from 'vue'
+import { ref,onMounted,nextTick,computed,watch  } from 'vue'
 import {getNodes,AddNodes,DelNode,UpdateNode} from "@/api/subcription/node"
+import {getSubSchedulers,addSubScheduler,updateSubScheduler,deleteSubScheduler,type SubScheduler,type SubSchedulerRequest} from "@/api/subcription/scheduler"
+import { ElMessage, ElMessageBox } from 'element-plus'
 interface Node {
   ID: number;
   Name: string;
@@ -18,6 +20,40 @@ const dialogVisible = ref(false)
 const table = ref()
 const NodeTitle = ref('')
 const radio1 = ref('1')
+
+// 订阅相关变量
+const subSchedulerData = ref<SubScheduler[]>([])
+const subSchedulerDialogVisible = ref(false)
+const subSchedulerFormVisible = ref(false)
+const subSchedulerForm = ref<SubSchedulerRequest>({
+  name: '',
+  url: '',
+  cron_expr: '',
+  enabled: true
+})
+const subSchedulerFormTitle = ref('')
+const subSchedulerTable = ref()
+const subSchedulerSelection = ref<SubScheduler[]>([])
+
+// Cron表达式验证状态
+const cronValidationStatus = ref<{
+  isValid: boolean,
+  message: string
+}>({
+  isValid: true,
+  message: ''
+})
+
+// 订阅分页
+const subCurrentPage = ref(1)
+const subPageSize = ref(10)
+
+// 订阅表格数据
+const currentSubSchedulerData = computed(() => {
+  const start = (subCurrentPage.value - 1) * subPageSize.value;
+  const end = start + subPageSize.value;
+  return subSchedulerData.value.slice(start, end);
+})
 
 async function getnodes() {
   const {data} = await getNodes();
@@ -179,8 +215,9 @@ const currentTableData = computed(() => {
   const end = start + pageSize.value;
   return tableData.value.slice(start, end);
 });
+
 // 复制链接
-const copyUrl = (url: string) => {
+const copyUrl = async (url: string) => {
   const textarea = document.createElement('textarea');
   textarea.value = url;
   document.body.appendChild(textarea);
@@ -204,6 +241,348 @@ const copyUrl = (url: string) => {
 };
 const copyInfo = (row: any) => {
   copyUrl(row.Link)
+}
+
+// 订阅相关函数
+const getSubSchedulerList = async () => {
+  try {
+    const response = await getSubSchedulers()
+    
+    if (response) {
+      subSchedulerData.value = response.data || []
+    } else {
+      ElMessage.error('获取订阅列表失败')
+    }
+  } catch (error) {
+    console.error('获取订阅列表失败:', error)
+    ElMessage.error('获取订阅列表失败')
+  }
+}
+
+const handleImportSubscription = () => {
+  subSchedulerDialogVisible.value = true
+  getSubSchedulerList()
+}
+
+const handleAddSubScheduler = () => {
+  subSchedulerFormTitle.value = '添加订阅'
+  subSchedulerForm.value = {
+    name: '',
+    url: '',
+    cron_expr: '',
+    enabled: true
+  }
+  subSchedulerFormVisible.value = true
+}
+
+const handleEditSubScheduler = (row: SubScheduler) => {
+  subSchedulerFormTitle.value = '编辑订阅'
+  subSchedulerForm.value = {
+    id: row.ID,
+    name: row.Name,
+    url: row.URL,
+    cron_expr: row.CronExpr,
+    enabled: row.Enabled
+  }
+  subSchedulerFormVisible.value = true
+}
+
+const handleDeleteSubScheduler = (row: SubScheduler) => {
+  ElMessageBox.confirm(
+    `确定要删除订阅 "${row.Name}" 吗？`,
+    '确认删除',
+    {
+      confirmButtonText: '确定',
+      cancelButtonText: '取消',
+      type: 'warning',
+    }
+  ).then(async () => {
+    try {
+      const response = await deleteSubScheduler(row.ID)
+      if (response) {
+        ElMessage.success('删除成功')
+        await getSubSchedulerList()
+      } else {
+        ElMessage.error('删除失败')
+      }
+    } catch (error) {
+      console.error('删除失败:', error)
+      ElMessage.error('删除失败')
+    }
+  })
+}
+
+const handleSubSchedulerSelectionChange = (val: SubScheduler[]) => {
+  subSchedulerSelection.value = val
+}
+
+const handleBatchDeleteSubScheduler = () => {
+  if (subSchedulerSelection.value.length === 0) {
+    ElMessage.warning('请选择要删除的项目')
+    return
+  }
+  
+  ElMessageBox.confirm(
+    `确定要删除选中的 ${subSchedulerSelection.value.length} 个订阅吗？`,
+    '确认批量删除',
+    {
+      confirmButtonText: '确定',
+      cancelButtonText: '取消',
+      type: 'warning',
+    }
+  ).then(async () => {
+    try {
+      const promises = subSchedulerSelection.value.map(item => deleteSubScheduler(item.ID))
+      await Promise.all(promises)
+      ElMessage.success('批量删除成功')
+      await getSubSchedulerList()
+    } catch (error) {
+      console.error('批量删除失败:', error)
+      ElMessage.error('批量删除失败')
+    }
+  })
+}
+
+// Cron表达式验证函数
+const validateCronExpression = (cron: string): boolean => {
+  // 去除首尾空格
+  cron = cron.trim()
+  
+  // 分割Cron表达式
+  const parts = cron.split(/\s+/)
+  
+  // 只允许5个部分的Cron表达式
+  // 5个部分: 分 时 日 月 周
+  if (parts.length !== 5) {
+    return false
+  }
+  
+  // 验证每个部分的格式
+  const ranges = [59, 23, 31, 12, 6]  // 分 时 日 月 周
+  
+  for (let i = 0; i < parts.length; i++) {
+    const part = parts[i]
+    const maxVal = ranges[i]
+    
+    // 允许的特殊字符
+    if (part === '*' || part === '?') {
+      continue
+    }
+    
+    // 检查范围表达式 (如: 1-5)
+    if (part.includes('-')) {
+      const [start, end] = part.split('-').map(Number)
+      if (isNaN(start) || isNaN(end) || start < 0 || end > maxVal || start > end) {
+        return false
+      }
+      continue
+    }
+    
+    // 检查步长表达式 (如: */5, 0-30/5)
+    if (part.includes('/')) {
+      const [base, step] = part.split('/')
+      if (isNaN(Number(step)) || Number(step) <= 0) {
+        return false
+      }
+      
+      if (base === '*') {
+        continue
+      }
+      
+      if (base.includes('-')) {
+        const [start, end] = base.split('-').map(Number)
+        if (isNaN(start) || isNaN(end) || start < 0 || end > maxVal || start > end) {
+          return false
+        }
+      } else {
+        const num = Number(base)
+        if (isNaN(num) || num < 0 || num > maxVal) {
+          return false
+        }
+      }
+      continue
+    }
+    
+    // 检查列表表达式 (如: 1,3,5)
+    if (part.includes(',')) {
+      const values = part.split(',').map(Number)
+      for (const val of values) {
+        if (isNaN(val) || val < 0 || val > maxVal) {
+          return false
+        }
+      }
+      continue
+    }
+    
+    // 检查单个数值
+    const num = Number(part)
+    if (isNaN(num) || num < 0 || num > maxVal) {
+      return false
+    }
+  }
+    return true
+}
+
+// 实时验证Cron表达式
+watch(
+  () => subSchedulerForm.value.cron_expr,
+  (newCron) => {
+    if (!newCron || newCron.trim() === '') {
+      cronValidationStatus.value = {
+        isValid: true,
+        message: ''
+      }
+      return
+    }
+    
+    const isValid = validateCronExpression(newCron.trim())
+    if (isValid) {
+      cronValidationStatus.value = {
+        isValid: true,
+        message: 'Cron表达式格式正确'
+      }
+    } else {
+      // 检查可能的错误原因
+      const parts = newCron.trim().split(/\s+/)
+      let errorMsg = 'Cron表达式格式不正确'
+      
+      if (parts.length !== 5) {
+        errorMsg = `表达式必须为5个部分，当前有${parts.length}个部分`
+      } else {
+        // 如果长度正确但格式错误，检查每个部分
+        const partNames = ['分', '时', '日', '月', '周']
+        const ranges = [59, 23, 31, 12, 6]  // 分 时 日 月 周
+        
+        for (let i = 0; i < parts.length; i++) {
+          const part = parts[i]
+          const maxVal = ranges[i]
+          
+          // 如果不是通配符，检查是否为有效数值
+          if (part !== '*' && part !== '?') {
+            if (part.includes('/')) {
+              // 步长表达式
+              const [base, step] = part.split('/')
+              if (isNaN(Number(step)) || Number(step) <= 0) {
+                errorMsg = `${partNames[i]}字段步长格式错误：${part}`
+                break
+              }
+            } else if (part.includes('-')) {
+              // 范围表达式
+              const [start, end] = part.split('-').map(Number)
+              if (isNaN(start) || isNaN(end) || start < 0 || end > maxVal || start > end) {
+                errorMsg = `${partNames[i]}字段范围错误：${part}`
+                break
+              }
+            } else if (part.includes(',')) {
+              // 列表表达式
+              const values = part.split(',').map(Number)
+              let hasError = false
+              for (const val of values) {
+                if (isNaN(val) || val < 0 || val > maxVal) {
+                  errorMsg = `${partNames[i]}字段列表值错误：${part}`
+                  hasError = true
+                  break
+                }
+              }
+              if (hasError) break
+            } else {
+              // 单个数值
+              const num = Number(part)
+              if (isNaN(num) || num < 0 || num > maxVal) {
+                errorMsg = `${partNames[i]}字段值超出范围：${part}`
+                break
+              }
+            }
+          }
+        }
+      }
+      
+      cronValidationStatus.value = {
+        isValid: false,
+        message: errorMsg
+      }
+    }
+  }
+)
+
+const submitSubSchedulerForm = async () => {
+  if (!subSchedulerForm.value.name.trim()) {
+    ElMessage.warning('请输入名称')
+    return
+  }
+  if (!subSchedulerForm.value.url.trim()) {
+    ElMessage.warning('请输入URL')
+    return
+  }
+  if (!subSchedulerForm.value.cron_expr.trim()) {
+    ElMessage.warning('请输入Cron表达式')
+    return
+  }    // 验证Cron表达式格式
+  if (!validateCronExpression(subSchedulerForm.value.cron_expr.trim())) {
+    ElMessage({
+      message: '请输入正确的5字段Cron表达式，格式为：分 时 日 月 周',
+      type: 'error',
+      duration: 5000,
+      showClose: true
+    })
+    return
+  }
+
+  try {
+    let response
+    if (subSchedulerFormTitle.value === '添加订阅') {
+      response = await addSubScheduler(subSchedulerForm.value)
+      if (response) {
+      ElMessage.success('添加成功')
+      subSchedulerFormVisible.value = false
+      await getSubSchedulerList()
+    } else {
+      ElMessage.error('添加失败')
+    }
+    } else {
+      response = await updateSubScheduler(subSchedulerForm.value)
+          if (response) {
+      ElMessage.success('更新成功')
+      subSchedulerFormVisible.value = false
+      await getSubSchedulerList()
+    } else {
+      ElMessage.error('更新失败')
+    }
+    }
+    
+  } catch (error) {
+    console.error('操作失败:', error)
+    ElMessage.error('操作失败')
+  }
+}
+
+const handleSubSizeChange = (val: number) => {
+  subPageSize.value = val
+}
+
+const handleSubCurrentChange = (val: number) => {
+  subCurrentPage.value = val
+}
+
+// 格式化日期时间
+const formatDateTime = (dateTimeString: string) => {
+  if (!dateTimeString) return '-'
+  
+  try {
+    const date = new Date(dateTimeString)
+    if (isNaN(date.getTime())) return '-'
+    
+    return date.toLocaleString('zh-CN', {
+      year: 'numeric',
+      month: '2-digit',
+      day: '2-digit',
+      hour: '2-digit',
+      minute: '2-digit',
+      second: '2-digit'
+    })
+  } catch (error) {
+    return '-'
+  }
 }
 </script>
 
@@ -233,9 +612,9 @@ const copyInfo = (row: any) => {
         <el-button type="primary" @click="addnodes">确定</el-button>
       </div>
     </template>
-  </el-dialog>
-    <el-card>
+  </el-dialog>    <el-card>
     <el-button type="primary" @click="handleAddNode">添加节点</el-button>
+    <el-button type="success" @click="handleImportSubscription" style="margin-left: 10px">导入订阅</el-button>
     <div style="margin-bottom: 10px"></div>
       <el-table ref="table" :data="currentTableData" style="width: 100%" @selection-change="handleSelectionChange">
     <el-table-column type="selection" fixed prop="ID" label="id"  />
@@ -268,9 +647,154 @@ const copyInfo = (row: any) => {
   layout="total, sizes, prev, pager, next, jumper"
   :page-sizes="[10, 20, 30, 40]"
   :total="tableData.length">
-</el-pagination>
-
-    </el-card>
+</el-pagination>    </el-card>    <!-- 导入订阅对话框 -->
+    <el-dialog
+      v-model="subSchedulerDialogVisible"
+      title="订阅管理"
+      width="90%"
+      :close-on-click-modal="false"
+    >
+      <div style="margin-bottom: 20px;">
+        <el-button type="primary" @click="handleAddSubScheduler">添加订阅</el-button>
+        <el-button type="danger" @click="handleBatchDeleteSubScheduler">批量删除</el-button>
+      </div>
+        <el-table 
+        ref="subSchedulerTable" 
+        :data="currentSubSchedulerData" 
+        style="width: 100%" 
+        @selection-change="handleSubSchedulerSelectionChange"
+      >
+        <el-table-column type="selection" width="55" />
+        <el-table-column prop="Name" label="名称" min-width="120">
+          <template #default="scope">
+            <el-tag type="primary">{{ scope.row.Name }}</el-tag>
+          </template>
+        </el-table-column>
+        <el-table-column prop="URL" label="订阅地址" min-width="200" :show-overflow-tooltip="true" />        <el-table-column prop="CronExpr" label="Cron表达式" min-width="120" />
+        <el-table-column prop="LastRunTime" label="上次运行" min-width="160">
+          <template #default="scope">
+            <span v-if="scope.row.LastRunTime">
+              {{ formatDateTime(scope.row.LastRunTime) }}
+            </span>
+            <span v-else style="color: #909399;">-</span>
+          </template>
+        </el-table-column>
+        <el-table-column prop="NextRunTime" label="下次运行" min-width="160">
+          <template #default="scope">
+            <span v-if="scope.row.NextRunTime" :style="{ color: new Date(scope.row.NextRunTime) <= new Date() ? '#F56C6C' : '#67C23A' }">
+              {{ formatDateTime(scope.row.NextRunTime) }}
+            </span>
+            <span v-else style="color: #909399;">-</span>
+          </template>
+        </el-table-column>
+        <el-table-column prop="Enabled" label="状态" width="100">
+          <template #default="scope">
+            <el-tag :type="scope.row.Enabled ? 'success' : 'danger'">
+              {{ scope.row.Enabled ? '启用' : '禁用' }}
+            </el-tag>
+          </template>
+        </el-table-column>
+        <el-table-column label="操作" width="180" fixed="right">
+          <template #default="scope">
+            <el-button link type="primary" size="small" @click="handleEditSubScheduler(scope.row)">
+              编辑
+            </el-button>
+            <el-button link type="danger" size="small" @click="handleDeleteSubScheduler(scope.row)">
+              删除
+            </el-button>
+          </template>
+        </el-table-column>
+      </el-table>
+      
+      <div style="margin-top: 20px;">
+        <el-pagination
+          @size-change="handleSubSizeChange"
+          @current-change="handleSubCurrentChange"
+          :current-page="subCurrentPage"
+          :page-size="subPageSize"
+          layout="total, sizes, prev, pager, next, jumper"
+          :page-sizes="[10, 20, 30, 40]"
+          :total="subSchedulerData.length"
+        />
+      </div>
+    </el-dialog>    <!-- 添加/编辑订阅对话框 -->
+    <el-dialog
+      v-model="subSchedulerFormVisible"
+      :title="subSchedulerFormTitle"
+      width="600px"
+      :close-on-click-modal="false"
+    >
+      <el-form :model="subSchedulerForm" label-width="120px">
+        <el-form-item label="名称" required>
+          <el-input 
+            v-model="subSchedulerForm.name" 
+            placeholder="请输入订阅名称"
+            clearable
+          />
+        </el-form-item>
+        <el-form-item label="订阅地址" required>
+          <el-input 
+            v-model="subSchedulerForm.url" 
+            placeholder="请输入订阅URL地址"
+            clearable
+          />
+        </el-form-item>        <el-form-item label="Cron表达式" required>          <el-input 
+            v-model="subSchedulerForm.cron_expr" 
+            placeholder="请输入5字段Cron表达式，例如: 0 */6 * * *"
+            clearable
+          />
+          
+          <!-- Cron表达式格式说明 -->
+          <div style="font-size: 12px; color: #909399; margin-top: 5px;">
+            <div><strong>Cron表达式格式 (5字段):</strong> 分 时 日 月 周</div>
+            
+            <div style="margin-top: 8px;">
+              <div v-if="subSchedulerForm.cron_expr.trim() && cronValidationStatus.isValid" style="color: #67C23A; font-weight: bold; margin-bottom: 5px;">
+                ✓ {{ cronValidationStatus.message }}
+              </div>
+              
+              <div v-if="subSchedulerForm.cron_expr.trim() && !cronValidationStatus.isValid" style="color: #F56C6C; font-weight: bold; margin-bottom: 5px;">
+                ✗ {{ cronValidationStatus.message }}
+              </div>
+            </div>
+            
+            <div v-if="subSchedulerForm.cron_expr.trim() && !cronValidationStatus.isValid" style="
+              color: #F56C6C;
+              background-color: #FEF0F0;
+              padding: 8px 12px;
+              border-radius: 4px;
+              border-left: 3px solid #F56C6C;
+              margin-top: 5px;
+              margin-bottom: 10px;
+            ">
+              <strong>正确格式示例：</strong> 0 */6 * * * (每6小时执行一次)
+            </div>
+            
+            <div style="background-color: #F5F7FA; padding: 8px; border-radius: 4px; margin-top: 5px; line-height: 1.5;">
+              <strong>常用示例:</strong>
+              <div>• 0 */6 * * * - 每6小时执行</div>
+              <div>• 0 0 * * * - 每天0点执行</div>
+              <div>• 0 */2 * * * - 每2小时执行</div>
+              <div>• 0 0 * * 1 - 每周一执行</div>
+            </div>
+          </div>
+        </el-form-item>
+        <el-form-item label="启用状态">
+          <el-switch 
+            v-model="subSchedulerForm.enabled"
+            active-text="启用"
+            inactive-text="禁用"
+          />
+        </el-form-item>
+      </el-form>
+      
+      <template #footer>
+        <div class="dialog-footer">
+          <el-button @click="subSchedulerFormVisible = false">取消</el-button>
+          <el-button type="primary" @click="submitSubSchedulerForm">确定</el-button>
+        </div>
+      </template>
+    </el-dialog>
   </div>
 </template>
 

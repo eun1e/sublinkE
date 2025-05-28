@@ -1,11 +1,16 @@
 package models
 
+import (
+	"gorm.io/gorm/clause"
+)
+
 type Node struct {
-	ID              int
+	ID              int `gorm:"primaryKey"`
 	Link            string
-	Name            string
+	Name            string `gorm:"uniqueIndex:idx_name_id"`
 	DialerProxyName string
 	CreateDate      string
+	Source          string `gorm:"default:'manual'"`
 }
 
 // Add 添加节点
@@ -36,4 +41,17 @@ func (node *Node) List() ([]Node, error) {
 // 删除节点
 func (node *Node) Del() error {
 	return DB.Delete(node).Error
+}
+
+// UpsertNode 插入或更新节点
+func (node *Node) UpsertNode() error {
+	return DB.Clauses(clause.OnConflict{
+		Columns:   []clause.Column{{Name: "name"}},
+		DoUpdates: clause.AssignmentColumns([]string{"link", "create_date", "source"}),
+	}).Create(node).Error
+}
+
+// DeleteAutoSubscriptionNodes 删除订阅节点
+func DeleteAutoSubscriptionNodes(subName string) error {
+	return DB.Where("source = ?", "sublinkE").Where("name like ?", subName+"%").Delete(&Node{}).Error
 }

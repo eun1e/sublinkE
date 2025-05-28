@@ -11,6 +11,7 @@ import (
 	"sublink/middlewares"
 	"sublink/models"
 	"sublink/routers"
+	"sublink/services"
 	"sublink/settings"
 	"sublink/utils"
 
@@ -120,6 +121,16 @@ func Run(port int) {
 	Templateinit()
 	// 启动 AccessKey 清理定时任务
 	models.StartAccessKeyCleanupScheduler()
+
+	// 初始化并启动定时任务管理器
+	scheduler := services.GetSchedulerManager()
+	scheduler.Start()
+	// 从数据库加载定时任务
+	err := scheduler.LoadFromDatabase()
+	if err != nil {
+		log.Printf("加载定时任务失败: %v", err)
+	}
+
 	// 安装中间件
 	r.Use(middlewares.AuthToken) // jwt验证token
 	// 设置静态资源路径
@@ -150,6 +161,7 @@ func Run(port int) {
 	routers.Total(r)
 	routers.Templates(r)
 	routers.Version(r, version)
+	routers.SubScheduler(r)
 	// 启动服务
 	r.Run(fmt.Sprintf("0.0.0.0:%d", port))
 }

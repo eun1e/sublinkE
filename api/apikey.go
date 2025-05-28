@@ -16,7 +16,7 @@ type UserAccessKey struct {
 
 func GenerateAPIKey(c *gin.Context) {
 	var userAccessKey UserAccessKey
-	if err := c.ShouldBind(&userAccessKey); err != nil {
+	if err := c.ShouldBindJSON(&userAccessKey); err != nil {
 		c.JSON(500, gin.H{"msg": "参数错误"})
 		return
 	}
