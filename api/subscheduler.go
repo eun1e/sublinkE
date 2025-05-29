@@ -154,6 +154,8 @@ func SubSchedulerUpdate(c *gin.Context) {
 		return
 	}
 
+	subS.Name = req.Name
+	subS.URL = req.URL
 	subS.ID = req.ID
 	subS.CronExpr = req.CronExpr
 	subS.Enabled = req.Enabled
