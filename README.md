@@ -7,6 +7,7 @@
   <img src="https://img.shields.io/badge/Go-1.22.2-green.svg"/>
   <img src="https://img.shields.io/badge/Element%20Plus-2.6.1-blue.svg"/>
   <img src="https://img.shields.io/badge/license-MIT-green.svg"/>
+  <div align="center"> 中文 | <a href="README.en-US.md">English</div>
 
 
 </div>
