@@ -1,13 +1,13 @@
 package api
 
 import (
+	"github.com/golang-jwt/jwt/v4"
 	"log"
 	"sublink/middlewares"
 	"sublink/models"
 	"sublink/utils"
 	"time"
 
-	"github.com/dgrijalva/jwt-go"
 	"github.com/gin-gonic/gin"
 )
 
@@ -15,10 +15,10 @@ import (
 func GetToken(username string) (string, error) {
 	c := &middlewares.JwtClaims{
 		Username: username,
-		StandardClaims: jwt.StandardClaims{
-			ExpiresAt: time.Now().Add(time.Hour * 24 * 14).Unix(), // 设置14天过期
-			IssuedAt:  time.Now().Unix(),                          // 签发时间
-			Subject:   username,                                   // 用户
+		RegisteredClaims: jwt.RegisteredClaims{
+			ExpiresAt: jwt.NewNumericDate(time.Now().Add(24 * time.Hour * 14)), // 14天后过期
+			IssuedAt:  jwt.NewNumericDate(time.Now()),                          // 签发时间
+			Subject:   username,
 		},
 	}
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, c)

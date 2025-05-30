@@ -3,8 +3,8 @@ package middlewares
 import (
 	"errors"
 	"fmt"
-	"github.com/dgrijalva/jwt-go"
 	"github.com/gin-gonic/gin"
+	"github.com/golang-jwt/jwt/v4"
 	"net/http"
 	"os"
 	"strings"
@@ -17,7 +17,7 @@ var Secret = []byte("sublink") // 秘钥
 // JwtClaims jwt声明
 type JwtClaims struct {
 	Username string `json:"username"`
-	jwt.StandardClaims
+	jwt.RegisteredClaims
 }
 
 // AuthToken 验证token中间件

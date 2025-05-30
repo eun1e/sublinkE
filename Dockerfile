@@ -11,7 +11,7 @@ RUN cd webs && pnpm install && pnpm run build
 
 
 # 2. 构建后端
-FROM golang:1.22.2-alpine AS backend-builder
+FROM golang:1.24.3-alpine AS backend-builder
 WORKDIR /app
 COPY go.mod go.sum ./
 RUN go mod download
