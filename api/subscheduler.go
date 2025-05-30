@@ -168,11 +168,7 @@ func SubSchedulerUpdate(c *gin.Context) {
 
 	// 更新定时任务
 	scheduler := services.GetSchedulerManager()
-	err = scheduler.UpdateJob(req.ID, req.CronExpr, req.Enabled, req.URL, req.Name)
-	if err != nil {
-		// 任务更新失败，但数据库记录已更新，记录日志但不返回错误
-		// 可以考虑后续通过重新加载来更新任务
-	}
+	_ = scheduler.UpdateJob(req.ID, req.CronExpr, req.Enabled, req.URL, req.Name)
 
 	c.JSON(200, gin.H{
 		"code": "00000",

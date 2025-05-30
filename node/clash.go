@@ -98,7 +98,7 @@ func EncodeClash(urls []Urls, sqlconfig SqlConfig) ([]byte, error) {
 	var proxys []Proxy
 
 	for _, link := range urls {
-		Scheme := strings.Split(link.Url, "://")[0]
+		Scheme := strings.ToLower(strings.Split(link.Url, "://")[0])
 		switch {
 		case Scheme == "ss":
 			ss, err := DecodeSSURL(link.Url)
@@ -358,6 +358,26 @@ func EncodeClash(urls []Urls, sqlconfig SqlConfig) ([]byte, error) {
 				Dialer_proxy:       link.DialerProxyName,
 			}
 			proxys = append(proxys, tuicproxy)
+
+		case Scheme == "anytls":
+			anyTLS, err := DecodeAnyTLSURL(link.Url)
+			if err != nil {
+				log.Println(err)
+				continue
+			}
+			anyTLSProxy := Proxy{
+				Name:               anyTLS.Name,
+				Type:               "anytls",
+				Server:             anyTLS.Server,
+				Port:               anyTLS.Port,
+				Password:           anyTLS.Password,
+				Skip_cert_verify:   anyTLS.SkipCertVerify,
+				Sni:                anyTLS.SNI,
+				Client_fingerprint: anyTLS.ClientFingerprint,
+			}
+
+			proxys = append(proxys, anyTLSProxy)
+
 		}
 	}
 	// 生成Clash配置文件

@@ -34,7 +34,7 @@
 - 高自由度与安全性，支持访问订阅记录及简易配置管理；
 - 支持多种客户端协议及格式，包括：
     - v2ray（base64 通用格式）
-    - clash（支持 ss, ssr, trojan, vmess, vless, hy, hy2, tuic）
+    - clash（支持 ss, ssr, trojan, vmess, vless, hy, hy2, tuic ,AnyTLS）
     - surge（支持 ss, trojan, vmess, hy2, tuic）
 - 新增 token 授权及订阅导入功能，增强安全性和便捷性。
 

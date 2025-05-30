@@ -48,14 +48,14 @@ func scheduleClashToNodeLinks(proxys []Proxy, subName string) {
 		var node models.Node
 		var link string
 		proxy.Name = subName + proxy.Name
-		switch proxy.Type {
+		switch strings.ToLower(proxy.Type) {
 		case "ss":
 			// ss://method:password@server:port#name
 			method := proxy.Cipher
 			password := proxy.Password
 			server := proxy.Server
 			port := proxy.Port
-			name := url.QueryEscape(proxy.Name)
+			name := proxy.Name
 			encoded := base64.StdEncoding.EncodeToString([]byte(fmt.Sprintf("%s:%s", method, password)))
 			link = fmt.Sprintf("ss://%s@%s:%d#%s", encoded, server, port, name)
 		case "ssr":
@@ -83,7 +83,7 @@ func scheduleClashToNodeLinks(proxys []Proxy, subName string) {
 			password := proxy.Password
 			server := proxy.Server
 			port := proxy.Port
-			name := url.QueryEscape(proxy.Name)
+			name := proxy.Name
 			query := url.Values{}
 
 			// 添加所有Clash配置中的参数
@@ -192,7 +192,7 @@ func scheduleClashToNodeLinks(proxys []Proxy, subName string) {
 			uuid := proxy.Uuid
 			server := proxy.Server
 			port := proxy.Port
-			name := url.QueryEscape(proxy.Name)
+			name := proxy.Name
 			query := url.Values{}
 
 			// 处理网络类型
@@ -276,7 +276,7 @@ func scheduleClashToNodeLinks(proxys []Proxy, subName string) {
 			// hysteria://server:port?protocol=udp&auth=auth&peer=peer&insecure=1&upmbps=up&downmbps=down&alpn=alpn#name
 			server := proxy.Server
 			port := proxy.Port
-			name := url.QueryEscape(proxy.Name)
+			name := proxy.Name
 			query := url.Values{}
 			query.Set("protocol", "udp")
 			if proxy.Auth_str != "" {
@@ -327,7 +327,7 @@ func scheduleClashToNodeLinks(proxys []Proxy, subName string) {
 			password := proxy.Password
 			server := proxy.Server
 			port := proxy.Port
-			name := url.QueryEscape(proxy.Name)
+			name := proxy.Name
 			query := url.Values{}
 			if proxy.Sni != "" {
 				query.Set("sni", proxy.Sni)
@@ -345,6 +345,25 @@ func scheduleClashToNodeLinks(proxys []Proxy, subName string) {
 				query.Set("disable_sni", "1")
 			}
 			link = fmt.Sprintf("tuic://%s:%s@%s:%d?%s#%s", uuid, password, server, port, query.Encode(), name)
+		case "anytls":
+			// anytls://password@server:port?sni=sni&insecure=1&fp=chrome#anytls_name
+
+			password := proxy.Password
+			server := proxy.Server
+			port := proxy.Port
+			name := proxy.Name
+			query := url.Values{}
+			if proxy.Sni != "" {
+				query.Set("sni", proxy.Sni)
+			}
+			if proxy.Skip_cert_verify {
+				query.Set("insecure", "1")
+			}
+			if proxy.Client_fingerprint != "" {
+				query.Set("fp", proxy.Client_fingerprint)
+			}
+
+			link = fmt.Sprintf("anytls://%s@%s:%d?%s#%s", password, server, port, query.Encode(), name)
 		}
 		node.Link = link
 		node.Name = proxy.Name
