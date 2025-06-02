@@ -43,7 +43,7 @@ func AuthToken(c *gin.Context) {
 	if accessKey != "" {
 		username, bool, err := validApiKey(accessKey)
 		if err != nil || !bool {
-			c.JSON(400, gin.H{"msg": "无效的API Key"})
+			c.JSON(400, gin.H{"msg": err.Error()})
 			c.Abort()
 			return
 		}

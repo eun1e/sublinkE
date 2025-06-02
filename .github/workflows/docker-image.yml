@@ -1,9 +1,11 @@
-name: Build and Push Multi-Arch Docker Image
+name: Build and Release Multi-Platform
 
 on:
   push:
     tags:
-      - 'v*'  # 只有 v 开头的 tag 才会触发，如 v1.0.0
+      - 'v*' 
+    branches:
+      - 'test/github-actions'  # 添加测试分支
 
 jobs:
   build:
@@ -11,24 +13,111 @@ jobs:
 
     steps:
       - name: Checkout code
-        uses: actions/checkout@v2
-
-      - name: Set up QEMU
-        uses: docker/setup-qemu-action@v2
-
-      - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v2
-
-      - name: Log in to Docker Hub
-        uses: docker/login-action@v2
+        uses: actions/checkout@v4
         with:
-          username: ${{ secrets.DOCKER_USERNAME }}
-          password: ${{ secrets.DOCKER_PASSWORD }}
+          fetch-depth: 0 
+      - name: Set up Go
+        uses: actions/setup-go@v4
+        with:
+          go-version: '1.24.3'
 
-      - name: Build and Push Multi-Arch Docker Image
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+          cache: 'pnpm'
+          cache-dependency-path: webs/pnpm-lock.yaml
+
+      - name: Install pnpm
+        run: npm install -g pnpm
+
+      - name: Install frontend dependencies
         run: |
-          TAG=${GITHUB_REF#refs/tags/}
-          docker buildx build --no-cache --pull --platform linux/amd64,linux/arm64 \
-            -t eun1e/sublinke:${TAG} \
-            -t eun1e/sublinke:latest \
-            --push .
+          cd webs
+          pnpm install
+
+      - name: Build frontend
+        run: |
+          cd webs
+          pnpm run build
+
+      - name: Build Go binaries
+        run: |
+          # 创建构建目录
+          mkdir -p build
+          
+          # 构建不同平台的可执行文件
+          GOOS=linux GOARCH=amd64 go build -ldflags="-s -w" -o build/sublink-linux-amd64 .
+          GOOS=linux GOARCH=arm64 go build -ldflags="-s -w" -o build/sublink-linux-arm64 .
+          GOOS=windows GOARCH=amd64 go build -ldflags="-s -w" -o build/sublink-windows-amd64.exe .
+          GOOS=darwin GOARCH=amd64 go build -ldflags="-s -w" -o build/sublink-darwin-amd64 .
+          GOOS=darwin GOARCH=arm64 go build -ldflags="-s -w" -o build/sublink-darwin-arm64 .
+
+      - name: Generate changelog
+        id: changelog
+        run: |
+          # 获取当前tag
+          CURRENT_TAG=${GITHUB_REF#refs/tags/}
+          
+          # 获取上一个tag
+          PREVIOUS_TAG=$(git describe --tags --abbrev=0 HEAD~1 2>/dev/null || echo "")
+          
+          echo "current_tag=$CURRENT_TAG" >> $GITHUB_OUTPUT
+          
+          # 生成changelog
+          if [ -z "$PREVIOUS_TAG" ]; then
+            echo "## 🎉 首次发布" > changelog.md
+            echo "" >> changelog.md
+            echo "### 📝 所有提交:" >> changelog.md
+            git log --pretty=format:"- %s (%h)" >> changelog.md
+          else
+            echo "## 🚀 更新内容 ($PREVIOUS_TAG -> $CURRENT_TAG)" > changelog.md
+            echo "" >> changelog.md
+            echo "### 📝 提交记录:" >> changelog.md
+            git log --pretty=format:"- %s (%h)" $PREVIOUS_TAG..$CURRENT_TAG >> changelog.md
+          fi
+          
+          echo "" >> changelog.md
+          echo "### 📦 发布文件:" >> changelog.md
+          echo "- \`sublink-linux-amd64\` - Linux x64" >> changelog.md
+          echo "- \`sublink-linux-arm64\` - Linux ARM64" >> changelog.md
+          echo "- \`sublink-windows-amd64.exe\` - Windows x64" >> changelog.md
+          echo "- \`sublink-darwin-amd64\` - macOS x64" >> changelog.md
+          echo "- \`sublink-darwin-arm64\` - macOS ARM64 (Apple Silicon)" >> changelog.md
+
+      # - name: Set up QEMU
+      #   uses: docker/setup-qemu-action@v3
+
+      # - name: Set up Docker Buildx
+      #   uses: docker/setup-buildx-action@v3
+
+      # - name: Log in to Docker Hub
+      #   uses: docker/login-action@v3
+      #   with:
+      #     username: ${{ secrets.DOCKER_USERNAME }}
+      #     password: ${{ secrets.DOCKER_PASSWORD }}
+
+      # - name: Build and Push Multi-Arch Docker Image
+      #   run: |
+      #     TAG=${GITHUB_REF#refs/tags/}
+      #     docker buildx build --no-cache --pull --platform linux/amd64,linux/arm64 \
+      #       -t eun1e/sublinke:${TAG} \
+      #       -t eun1e/sublinke:latest \
+      #       --push .
+
+      - name: Create Release
+        uses: softprops/action-gh-release@v1
+        with:
+          tag_name: ${{ steps.changelog.outputs.current_tag }}
+          name: Release ${{ steps.changelog.outputs.current_tag }}
+          body_path: changelog.md
+          files: |
+            build/sublink-linux-amd64
+            build/sublink-linux-arm64
+            build/sublink-windows-amd64.exe
+            build/sublink-darwin-amd64
+            build/sublink-darwin-arm64
+          draft: false
+          prerelease: false
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
