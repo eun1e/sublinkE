@@ -42,6 +42,8 @@
 - 新增 token 授权及订阅导入功能，增强安全性和便捷性。
 
 # 安装说明
+
+## Docker 运行
 ```bash
 docker run --name sublinke -p 8000:8000 \
 -v $PWD/db:/app/db \
@@ -51,10 +53,15 @@ docker run --name sublinke -p 8000:8000 \
 -d eun1e/sublinke 
 ```
 
-## 直接安装
+## 一键安装
 ```bash
-wget https://raw.githubusercontent.com/eun1e/sublinkE/refs/heads/main/install.sh && sh install.sh
+wget https://raw.githubusercontent.com/eun1e/sublinkE/refs/heads/main/install.sh   && sh install.sh
 ```
+
+> ⚠ **注意**  
+> 在 **Alpine Linux** 上运行一键安装脚本时，由于 Alpine 使用 `musl` 而非 `glibc`，插件模块无法正常工作。 
+> 推荐优先使用 **Docker 部署** 以获得最佳兼容性，或可选择 **Debian / Ubuntu** 等发行版。
+
 
 # 插件说明
 

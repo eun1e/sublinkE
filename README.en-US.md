@@ -41,7 +41,9 @@
     - surge (support ss, trojan, vmess, hy2, tuic)
 - Added token authorization and subscription import functionality, enhancing security and convenience.
 
-# Installation Instructions
+# 📦 Installation Guide
+
+## 🚀 Run with Docker
 ```bash
 docker run --name sublinke -p 8000:8000 \
 -v $PWD/db:/app/db \
@@ -50,6 +52,16 @@ docker run --name sublinke -p 8000:8000 \
 -v $PWD/plugins:/app/plugins \
 -d eun1e/sublinke 
 ```
+
+## ⚡ One-click Installation
+```bash
+wget https://raw.githubusercontent.com/eun1e/sublinkE/refs/heads/main/install.sh   && sh install.sh
+```
+
+> ⚠ **Note**  
+> When running the one-click installation script on **Alpine Linux**, the plugin module may not work properly because Alpine uses `musl` instead of `glibc`.  
+> It is recommended to use **Docker deployment** for the best compatibility, or choose distributions such as **Debian / Ubuntu**.
+
 
 # Plugin Description
 
