@@ -51,6 +51,11 @@ docker run --name sublinke -p 8000:8000 \
 -d eun1e/sublinke 
 ```
 
+## 直接安装
+```bash
+wget https://raw.githubusercontent.com/eun1e/sublinkE/refs/heads/main/install.sh && sh install.sh
+```
+
 # 插件说明
 
 `sublinkE` 提供了灵活的插件系统，允许开发者扩展系统功能而无需修改核心代码。
